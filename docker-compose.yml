@@ -7,12 +7,3 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - 5432:5432
-
-  pgadmin:
-    image: dpage/pgadmin4
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: example@email.com
-      PGADMIN_DEFAULT_PASSWORD: password
-    ports:
-      - 8888:80
