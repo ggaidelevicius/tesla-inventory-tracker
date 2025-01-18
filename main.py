@@ -1,10 +1,10 @@
 import psycopg
+import signal
+import sys
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
 from datetime import datetime
-import signal
-import sys
 
 
 class Database:
@@ -45,13 +45,80 @@ def signal_handler(_sig, _frame):
 
 
 def create_tables(db: Database) -> None:
+    # Create the enumerated type for car types
+    db.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'car_type') THEN
+                CREATE TYPE car_type AS ENUM ('RWD', 'AWD');
+            END IF;
+        END
+        $$;
+        """
+    )
+
+    # Create the enumerated type for car colours
+    db.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'car_colour') THEN
+                CREATE TYPE car_colour AS ENUM ('Pearl White', 'Solid Black', 'Deep Blue Metallic', 'Stealth Grey', 'Quicksilver', 'Ultra Red');
+            END IF;
+        END
+        $$;
+        """
+    )
+
+    # Create the enumerated type for car wheels
+    db.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'car_wheels') THEN
+                CREATE TYPE car_wheels AS ENUM ('18" Photon Wheels', '19" Nova Wheels');
+            END IF;
+        END
+        $$;
+        """
+    )
+
+    # Create the enumerated type for car interiors
+    db.execute(
+        """
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'car_interior') THEN
+                CREATE TYPE car_interior AS ENUM ('Black', 'White');
+            END IF;
+        END
+        $$;
+        """
+    )
+
     # Create the main 'cars' table
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
+            metadata_id TEXT REFERENCES car_metadata(id) DEFAULT NULL,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             deleted_at TIMESTAMP DEFAULT NULL
+        )
+        """
+    )
+
+    # Create the car metadata table
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS car_metadata (
+            id SERIAL PRIMARY KEY,
+            car_id TEXT REFERENCES cars(id) NOT NULL,
+            type car_type NOT NULL,
+            type car_colour NOT NULL,
+            type car_wheels NOT NULL,
+            type car_interior NOT NULL
         )
         """
     )
