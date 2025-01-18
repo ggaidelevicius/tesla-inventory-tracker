@@ -139,24 +139,29 @@ def insert_car_location(db: Database, car_id: str, location_name: str) -> None:
 
 
 def scrape_website_data(db: Database) -> None:
-    for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
-        url = f"https://www.tesla.com/en_AU/inventory/new/m3?TRIM=LRAWD&arrangeby=relevance&zip=6154&range=0&RegistrationProvince={state}"
-        driver = webdriver.Chrome(service=SERVICE)
-        driver.get(url)
-        sleep(5)
+    try:
+        for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
+            url = f"https://www.tesla.com/en_AU/inventory/new/m3?TRIM=LRAWD&arrangeby=relevance&zip=6154&range=0&RegistrationProvince={state}"
+            driver = webdriver.Chrome(service=SERVICE)
+            driver.get(url)
+            sleep(5)
 
-        confirm_button = driver.find_element(By.XPATH, "//button[text()='Confirm']")
-        confirm_button.click()
-        sleep(5)
+            confirm_button = driver.find_element(By.XPATH, "//button[text()='Confirm']")
+            confirm_button.click()
+            sleep(5)
 
-        articles = driver.find_elements(By.CSS_SELECTOR, "article.result.card")
-        for article in articles:
-            car_id = article.get_attribute("data-id")
-            insert_car(db, car_id)
-            insert_car_location(db, car_id, state)
+            articles = driver.find_elements(By.CSS_SELECTOR, "article.result.card")
+            for article in articles:
+                car_id = article.get_attribute("data-id")
+                insert_car(db, car_id)
+                insert_car_location(db, car_id, state)
 
-        driver.quit()
-    sleep(3600)
+            driver.quit()
+        print(f"✅ Scraped data at {datetime.now()}")
+    except Exception as e:
+        print(f"❌ Error: {e}")
+    finally:
+        sleep(3600)
 
 
 if __name__ == "__main__":
