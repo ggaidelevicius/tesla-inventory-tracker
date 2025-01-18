@@ -10,7 +10,7 @@ SERVICE = Service()
 
 
 class Database:
-    def __init__(self, dbname, user, password, host, port):
+    def __init__(self, dbname: str, user: str, password: str, host: str, port: int):
         self.dbname = dbname
         self.user = user
         self.password = password
@@ -95,7 +95,7 @@ def create_tables(db: Database) -> None:
 
 def seed_tables(db: Database) -> None:
     # Seed the locations table
-    for state in ["NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT", "ACT"]:
+    for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
         db.execute(
             """
             INSERT INTO locations (name)
@@ -126,7 +126,7 @@ def seed_tables(db: Database) -> None:
 #             cur.execute(
 #                 sql.SQL(
 #                     """
-#                     SELECT stock 
+#                     SELECT stock
 #                     FROM {table_name}
 #                     ORDER BY id DESC
 #                     LIMIT 1
