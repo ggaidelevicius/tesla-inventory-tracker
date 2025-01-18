@@ -47,6 +47,14 @@ class Database:
             conn.commit()
             return row
 
+    def fetch_all(self, query, params=None):
+        conn = self.connect()
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            rows = cur.fetchall()
+            conn.commit()
+            return rows
+
 
 def signal_handler(_sig: None, _frame: None) -> None:
     print("Exiting and closing database connection")
