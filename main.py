@@ -212,6 +212,7 @@ def insert_car_location(db: Database, car_id: str, location_name: str) -> None:
 
 
 def scrape_website_data(db: Database) -> None:
+    # TODO: handle checking of all car ids and flagging removed cars when not found via scraping
     try:
         for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
             url = f"https://www.tesla.com/en_AU/inventory/new/m3?RegistrationProvince={state}"
