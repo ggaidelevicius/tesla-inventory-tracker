@@ -39,6 +39,14 @@ class Database:
             cur.execute(query, params)
             conn.commit()
 
+    def fetch_one(self, query, params=None):
+        conn = self.connect()
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            row = cur.fetchone()
+            conn.commit()
+            return row
+
 
 def signal_handler(_sig: None, _frame: None) -> None:
     print("Exiting and closing database connection")
@@ -117,7 +125,7 @@ def create_tables(db: Database) -> None:
         """
         CREATE TABLE IF NOT EXISTS car_metadata (
             id SERIAL PRIMARY KEY,
-            car_id TEXT REFERENCES cars(id) NOT NULL,
+            car_id TEXT UNIQUE REFERENCES cars(id) NOT NULL,
             type car_type NOT NULL,
             colour car_colour NOT NULL,
             wheels car_wheels NOT NULL,
@@ -150,19 +158,25 @@ def create_tables(db: Database) -> None:
     # Create a view to compute availability
     db.execute(
         """
-        CREATE VIEW car_availability AS
-        SELECT
-            c.id AS car_id,
-            l.name AS location,
-            EXISTS (
-                SELECT 1
-                FROM car_locations cl
-                WHERE cl.car_id = c.id AND cl.location_id = l.id
-            ) AS available
-        FROM
-            cars c
-        CROSS JOIN
-            locations l
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_views WHERE viewname = 'car_availability') THEN
+                CREATE VIEW car_availability AS
+                SELECT
+                    c.id AS car_id,
+                    l.name AS location,
+                    EXISTS (
+                        SELECT 1
+                        FROM car_locations cl
+                        WHERE cl.car_id = c.id AND cl.location_id = l.id
+                    ) AS available
+                FROM
+                    cars c
+                CROSS JOIN
+                    locations l;
+            END IF;
+        END
+        $$;
         """
     )
 
@@ -181,12 +195,12 @@ def seed_tables(db: Database) -> None:
 
 
 def get_location_id(db: Database, location_name: str) -> int:
-    result = db.execute("SELECT id FROM locations WHERE name = %s", (location_name,))
-    location_id = result.fetchone()
-    if location_id:
-        return location_id[0]
-    else:
+    location_row = db.fetch_one(
+        "SELECT id FROM locations WHERE name = %s", (location_name,)
+    )
+    if location_row is None:
         raise ValueError(f"Location '{location_name}' not found")
+    return location_row[0]
 
 
 def insert_car(db: Database, car_id: str) -> None:
@@ -263,18 +277,16 @@ def scrape_website_data(db: Database) -> None:
             for article in articles:
                 article_html = article.get_attribute("innerHTML")
                 car_id = article.get_attribute("data-id")
-                car_type = (
-                    "AWD" if bool(re.search(r"All-Wheel"), article_html) else "RWD"
-                )
+                car_type = "AWD" if re.search(r"All-Wheel", article_html) else "RWD"
                 car_colour = determine_car_colour(article_html)
                 car_wheels = (
                     '18" Photon Wheels'
-                    if bool(re.search(r"Photon Wheels"), article_html)
+                    if re.search(r"Photon Wheels", article_html)
                     else '19" Nova Wheels'
                 )
                 car_interior = (
                     "Black"
-                    if bool(re.search(r"Black Premium Interior"), article_html)
+                    if re.search(r"Black Premium Interior", article_html)
                     else "White"
                 )
                 insert_car(db, car_id)
