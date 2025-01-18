@@ -3,6 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from time import sleep
 from datetime import datetime
+import signal
+import sys
 
 
 class Database:
@@ -34,6 +36,12 @@ class Database:
         with self.connect() as conn:
             with conn.cursor() as cur:
                 cur.execute(query, params)
+
+
+def signal_handler(_sig, _frame):
+    print("Exiting and closing database connection")
+    db.close()
+    sys.exit(0)
 
 
 def create_tables(db: Database) -> None:
@@ -170,5 +178,11 @@ if __name__ == "__main__":
     )
     create_tables(db)
     seed_tables(db)
-    while True:
-        scrape_website_data(db)
+
+    # Register the signal handler for Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
+    try:
+        while True:
+            scrape_website_data(db)
+    except KeyboardInterrupt:
+        signal_handler(None, None)
