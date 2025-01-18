@@ -225,6 +225,7 @@ def scrape_website_data(db: Database) -> None:
             for article in articles:
                 car_id = article.get_attribute("data-id")
                 insert_car(db, car_id)
+                # insert_car_metadata(db, car_id, type, colour, wheels, interior)
                 insert_car_location(db, car_id, state)
 
             driver.quit()
