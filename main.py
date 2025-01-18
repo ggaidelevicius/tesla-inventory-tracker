@@ -120,6 +120,7 @@ def insert_car(db: Database, car_id: str) -> None:
         """
         INSERT INTO cars (id)
         VALUES (%s)
+        ON CONFLICT (name) DO NOTHING
         """,
         (car_id,),
     )
@@ -131,6 +132,7 @@ def insert_car_location(db: Database, car_id: str, location_name: str) -> None:
         """
         INSERT INTO car_locations (car_id, location_id)
         VALUES (%s, %s)
+        ON CONFLICT (car_id, location_id) DO NOTHING
         """,
         (car_id, location_id),
     )
