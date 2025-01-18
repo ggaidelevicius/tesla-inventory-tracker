@@ -38,13 +38,13 @@ class Database:
                 cur.execute(query, params)
 
 
-def signal_handler(_sig, _frame):
+def signal_handler(_sig: None, _frame: None) -> None:
     print("Exiting and closing database connection")
     db.close()
     sys.exit(0)
 
 
-def create_tables(db: Database) -> None:
+def create_enums(db: Database) -> None:
     # Create the enumerated type for car types
     db.execute(
         """
@@ -97,14 +97,16 @@ def create_tables(db: Database) -> None:
         """
     )
 
-    # Create the main 'cars' table
+
+def create_tables(db: Database) -> None:
+    # Create the cars table
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
             metadata_id TEXT REFERENCES car_metadata(id) DEFAULT NULL,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
-            deleted_at TIMESTAMP DEFAULT NULL
+            removed_at TIMESTAMP DEFAULT NULL
         )
         """
     )
@@ -244,6 +246,7 @@ if __name__ == "__main__":
         host="localhost",
         port=5432,
     )
+    create_enums(db)
     create_tables(db)
     seed_tables(db)
 
