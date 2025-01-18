@@ -212,7 +212,7 @@ def insert_car_location(db: Database, car_id: str, location_name: str) -> None:
 def scrape_website_data(db: Database) -> None:
     try:
         for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
-            url = f"https://www.tesla.com/en_AU/inventory/new/m3?TRIM=LRAWD&arrangeby=relevance&zip=6154&range=0&RegistrationProvince={state}"
+            url = f"https://www.tesla.com/en_AU/inventory/new/m3?RegistrationProvince={state}"
             driver = webdriver.Chrome()
             driver.get(url)
             sleep(5)
