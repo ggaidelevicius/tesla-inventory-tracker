@@ -1,12 +1,8 @@
 import psycopg
-from psycopg import sql
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from time import sleep
 from datetime import datetime
-
-SERVICE = Service()
 
 
 class Database:
@@ -142,7 +138,7 @@ def scrape_website_data(db: Database) -> None:
     try:
         for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
             url = f"https://www.tesla.com/en_AU/inventory/new/m3?TRIM=LRAWD&arrangeby=relevance&zip=6154&range=0&RegistrationProvince={state}"
-            driver = webdriver.Chrome(service=SERVICE)
+            driver = webdriver.Chrome()
             driver.get(url)
             sleep(5)
 
