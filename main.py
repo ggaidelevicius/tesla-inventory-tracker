@@ -7,7 +7,7 @@ from models import create_enums, create_tables, seed_tables
 from scraper import scrape_website_data
 
 
-def signal_handler(_sig: None, _frame: None) -> None:
+def signal_handler(db: Database, _sig, _frame):
     print("Exiting and closing database connection")
     db.close()
     sys.exit(0)
@@ -25,8 +25,7 @@ if __name__ == "__main__":
     create_tables(db)
     seed_tables(db)
 
-    # Register the signal handler for Ctrl+C
-    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(db, sig, frame))
     try:
         while True:
             scrape_website_data(db)
