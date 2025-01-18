@@ -30,4 +30,4 @@ if __name__ == "__main__":
         while True:
             scrape_website_data(db)
     except KeyboardInterrupt:
-        signal_handler(None, None)
+        signal_handler(db, None, None)
