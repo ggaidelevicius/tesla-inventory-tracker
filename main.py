@@ -255,20 +255,12 @@ def insert_car_location(db: Database, car_id: str, location_name: str) -> None:
 
 
 def get_active_cars(db: Database) -> list[str]:
-    """
-    Returns a list of all car IDs where removed_at IS NULL.
-    """
     rows = db.fetch_all("SELECT id FROM cars WHERE removed_at IS NULL")
-    # rows might look like: [(car_id1,), (car_id2,), ...]
     car_ids = [row[0] for row in rows]
     return car_ids
 
 
 def mark_car_as_removed(db: Database, car_id: str) -> None:
-    """
-    Updates a single car row, setting removed_at to the current time
-    for the specified car_id.
-    """
     db.execute(
         "UPDATE cars SET removed_at = CURRENT_TIMESTAMP WHERE id = %s", (car_id,)
     )
