@@ -18,7 +18,7 @@ class Database:
         self.connection = None
 
     def connect(self):
-        if self.connection is None:
+        if not self.connection or self.connection.closed:
             self.connection = psycopg.connect(
                 dbname=self.dbname,
                 user=self.user,
@@ -34,9 +34,10 @@ class Database:
             self.connection = None
 
     def execute(self, query, params=None):
-        with self.connect() as conn:
-            with conn.cursor() as cur:
-                cur.execute(query, params)
+        conn = self.connect()
+        with conn.cursor() as cur:
+            cur.execute(query, params)
+            conn.commit()
 
 
 def signal_handler(_sig: None, _frame: None) -> None:
@@ -105,7 +106,6 @@ def create_tables(db: Database) -> None:
         """
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
-            metadata_id TEXT REFERENCES car_metadata(id) DEFAULT NULL,
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             removed_at TIMESTAMP DEFAULT NULL
         )
@@ -119,9 +119,9 @@ def create_tables(db: Database) -> None:
             id SERIAL PRIMARY KEY,
             car_id TEXT REFERENCES cars(id) NOT NULL,
             type car_type NOT NULL,
-            type car_colour NOT NULL,
-            type car_wheels NOT NULL,
-            type car_interior NOT NULL
+            colour car_colour NOT NULL,
+            wheels car_wheels NOT NULL,
+            interior car_interior NOT NULL
         )
         """
     )
@@ -278,7 +278,9 @@ def scrape_website_data(db: Database) -> None:
                     else "White"
                 )
                 insert_car(db, car_id)
-                insert_car_metadata(db, car_id, car_type, car_colour, car_wheels, car_interior)
+                insert_car_metadata(
+                    db, car_id, car_type, car_colour, car_wheels, car_interior
+                )
                 insert_car_location(db, car_id, state)
 
             driver.quit()
