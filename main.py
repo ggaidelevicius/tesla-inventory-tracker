@@ -193,7 +193,7 @@ def insert_car(db: Database, car_id: str) -> None:
         """
         INSERT INTO cars (id)
         VALUES (%s)
-        ON CONFLICT (name) DO NOTHING
+        ON CONFLICT (id) DO NOTHING
         """,
         (car_id,),
     )
