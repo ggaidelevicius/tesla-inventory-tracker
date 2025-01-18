@@ -48,14 +48,6 @@ def create_tables(db: Database) -> None:
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
             first_seen_time TIMESTAMP,
-            available_in_nsw BOOLEAN DEFAULT FALSE,
-            available_in_vic BOOLEAN DEFAULT FALSE,
-            available_in_qld BOOLEAN DEFAULT FALSE,
-            available_in_sa BOOLEAN DEFAULT FALSE,
-            available_in_wa BOOLEAN DEFAULT FALSE,
-            available_in_tas BOOLEAN DEFAULT FALSE,
-            available_in_nt BOOLEAN DEFAULT FALSE,
-            available_in_act BOOLEAN DEFAULT FALSE,
             matches_preferences BOOLEAN,
             deleted_at TIMESTAMP DEFAULT NULL
         )
@@ -80,6 +72,25 @@ def create_tables(db: Database) -> None:
             location_id INTEGER REFERENCES locations(id),
             PRIMARY KEY (car_id, location_id)
         )
+        """
+    )
+
+    # Create a view to compute availability
+    db.execute(
+        """
+        CREATE VIEW car_availability AS
+        SELECT
+            c.id AS car_id,
+            l.name AS location,
+            EXISTS (
+                SELECT 1
+                FROM car_locations cl
+                WHERE cl.car_id = c.id AND cl.location_id = l.id
+            ) AS available
+        FROM
+            cars c
+        CROSS JOIN
+            locations l
         """
     )
 
