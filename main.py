@@ -5,7 +5,6 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from time import sleep
 from datetime import datetime
-import re
 
 SERVICE = Service()
 
@@ -47,8 +46,7 @@ def create_tables(db: Database) -> None:
         """
         CREATE TABLE IF NOT EXISTS cars (
             id TEXT PRIMARY KEY,
-            first_seen_time TIMESTAMP,
-            matches_preferences BOOLEAN,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
             deleted_at TIMESTAMP DEFAULT NULL
         )
         """
@@ -68,8 +66,8 @@ def create_tables(db: Database) -> None:
     db.execute(
         """
         CREATE TABLE IF NOT EXISTS car_locations (
-            car_id TEXT REFERENCES cars(id),
-            location_id INTEGER REFERENCES locations(id),
+            car_id TEXT REFERENCES cars(id) NOT NULL,
+            location_id INTEGER REFERENCES locations(id) NOT NULL,
             PRIMARY KEY (car_id, location_id)
         )
         """
