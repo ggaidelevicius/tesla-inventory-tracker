@@ -11,22 +11,7 @@ from models import (
     get_active_cars,
     mark_car_as_removed,
 )
-
-
-def determine_car_colour(car_html: str) -> str:
-    if re.search(r"Pearl White", car_html):
-        return "Pearl White"
-    elif re.search(r"Solid Black", car_html):
-        return "Solid Black"
-    elif re.search(r"Deep Blue Metallic", car_html):
-        return "Deep Blue Metallic"
-    elif re.search(r"Stealth Grey", car_html):
-        return "Stealth Grey"
-    elif re.search(r"Quicksilver", car_html):
-        return "Quicksilver"
-    elif re.search(r"Ultra Red", car_html):
-        return "Ultra Red"
-    return "UNKNOWN"
+from .helpers import _determine_car_colour
 
 
 def scrape_website_data(db: Database) -> None:
@@ -48,7 +33,7 @@ def scrape_website_data(db: Database) -> None:
                 article_html = article.get_attribute("innerHTML")
                 car_id = article.get_attribute("data-id")
                 car_type = "AWD" if re.search(r"All-Wheel", article_html) else "RWD"
-                car_colour = determine_car_colour(article_html)
+                car_colour = _determine_car_colour(article_html)
                 car_wheels = (
                     '18" Photon Wheels'
                     if re.search(r"Photon Wheels", article_html)
@@ -71,7 +56,13 @@ def scrape_website_data(db: Database) -> None:
 
                 insert_car(db, car_id)
                 insert_car_metadata(
-                    db, car_id, car_type, car_colour, car_wheels, car_interior, car_price
+                    db,
+                    car_id,
+                    car_type,
+                    car_colour,
+                    car_wheels,
+                    car_interior,
+                    car_price,
                 )
                 insert_car_location(db, car_id, state)
                 found_cars.add(car_id)
