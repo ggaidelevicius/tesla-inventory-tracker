@@ -11,7 +11,7 @@ from models import (
     get_active_cars,
     mark_car_as_removed,
 )
-from .helpers import _determine_car_colour
+from .helpers import determine_car_colour
 
 
 def scrape_website_data(db: Database) -> None:
@@ -33,7 +33,7 @@ def scrape_website_data(db: Database) -> None:
                 article_html = article.get_attribute("innerHTML")
                 car_id = article.get_attribute("data-id")
                 car_type = "AWD" if re.search(r"All-Wheel", article_html) else "RWD"
-                car_colour = _determine_car_colour(article_html)
+                car_colour = determine_car_colour(article_html)
                 car_wheels = (
                     '18" Photon Wheels'
                     if re.search(r"Photon Wheels", article_html)

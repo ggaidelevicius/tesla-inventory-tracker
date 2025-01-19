@@ -1,7 +1,7 @@
 import re
 
 
-def _determine_car_colour(car_html: str) -> str:
+def determine_car_colour(car_html: str) -> str:
     if re.search(r"Pearl White", car_html):
         return "Pearl White"
     elif re.search(r"Solid Black", car_html):
