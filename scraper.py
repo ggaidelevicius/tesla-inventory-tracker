@@ -59,10 +59,19 @@ def scrape_website_data(db: Database) -> None:
                     if re.search(r"Black Premium Interior", article_html)
                     else "White"
                 )
+                car_price = int(
+                    re.sub(
+                        r"\D",
+                        "",
+                        article.find_element(
+                            By.CSS_SELECTOR, "span.result-purchase-price"
+                        ).text,
+                    )
+                )
 
                 insert_car(db, car_id)
                 insert_car_metadata(
-                    db, car_id, car_type, car_colour, car_wheels, car_interior
+                    db, car_id, car_type, car_colour, car_wheels, car_interior, car_price
                 )
                 insert_car_location(db, car_id, state)
                 found_cars.add(car_id)

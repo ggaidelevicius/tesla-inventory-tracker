@@ -76,7 +76,8 @@ def create_tables(db: Database) -> None:
             type car_type NOT NULL,
             colour car_colour NOT NULL,
             wheels car_wheels NOT NULL,
-            interior car_interior NOT NULL
+            interior car_interior NOT NULL,
+            price INTEGER NOT NULL
         )
         """
     )
@@ -168,14 +169,15 @@ def insert_car_metadata(
     car_colour: str,
     car_wheels: str,
     car_interior: str,
+    car_price: int
 ) -> None:
     db.execute(
         """
-        INSERT INTO car_metadata (car_id, type, colour, wheels, interior)
-        VALUES (%s, %s, %s, %s, %s)
+        INSERT INTO car_metadata (car_id, type, colour, wheels, interior, price)
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON CONFLICT (car_id) DO NOTHING
         """,
-        (car_id, car_type, car_colour, car_wheels, car_interior),
+        (car_id, car_type, car_colour, car_wheels, car_interior, car_price),
     )
 
 
