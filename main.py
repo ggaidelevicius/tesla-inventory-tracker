@@ -1,4 +1,4 @@
-# TODO: investigate if can use requests rather than selenium
+# TODO: refactor to use inventory api (https://www.tesla.com/inventory/api/v4/inventory-results?query=..)
 
 import signal
 import sys
