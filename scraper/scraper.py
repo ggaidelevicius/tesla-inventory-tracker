@@ -1,79 +1,128 @@
-import re
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from time import sleep
+import math
+import json
+import urllib.parse
 from datetime import datetime
-from database import Database
-from models import (
-    insert_car,
-    insert_car_metadata,
-    insert_car_location,
-    get_active_cars,
-    mark_car_as_removed,
-)
-from .helpers import determine_car_colour
+from time import sleep
+from selenium import webdriver
+from peewee import PostgresqlDatabase
+from models import Car, CarMetadata, Location, CarLocation
 
 
-def scrape_website_data(db: Database) -> None:
-    active_cars = set(get_active_cars(db))
-    found_cars = set()
+def scrape_website_data(db: PostgresqlDatabase) -> None:
+    """
+    Scrapes Tesla inventory data and updates Car, CarMetadata, Location, and CarLocation tables.
+    Marks cars that no longer appear in the listing as removed.
+    """
+    driver = None
     try:
+        db.connect()
+        # Track currently active cars in the database
+        active_cars = set(car.id for car in Car.select())
+        found_cars = set()
+
+        # Prepare query parameters
+        query_parameters = {
+            "query": {
+                "model": "m3",
+                "condition": ["new"],
+                "arrangeby": "Price",
+                "order": "asc",
+                "market": "AU",
+                "language": "en",
+                "super_region": "asia pacific",
+                "lng": 151.21,
+                "lat": -33.868,
+                "zip": "2000",
+                "range": 9999,
+            },
+            "offset": 0,
+            "count": 50,
+            "outsideOffset": 0,
+            "outsideSearch": False,
+        }
+
+        # Create Selenium driver once
         driver = webdriver.Chrome()
-        for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
-            url = f"https://www.tesla.com/en_AU/inventory/new/m3?RegistrationProvince={state}"
-            driver.get(url)
-            sleep(5)
 
-            confirm_button = driver.find_element(By.XPATH, "//button[text()='Confirm']")
-            confirm_button.click()
-            sleep(5)
+        # Fetch the first page of results
+        data = fetch_page_data(driver, query_parameters)
 
-            articles = driver.find_elements(By.CSS_SELECTOR, "article.result.card")
-            for article in articles:
-                article_html = article.get_attribute("innerHTML")
-                car_id = article.get_attribute("data-id")
-                car_type = "AWD" if re.search(r"All-Wheel", article_html) else "RWD"
-                car_colour = determine_car_colour(article_html)
-                car_wheels = (
-                    '18" Photon Wheels'
-                    if re.search(r"Photon Wheels", article_html)
-                    else '19" Nova Wheels'
-                )
-                car_interior = (
-                    "Black"
-                    if re.search(r"Black Premium Interior", article_html)
-                    else "White"
-                )
-                car_price = int(
-                    re.sub(
-                        r"\D",
-                        "",
-                        article.find_element(
-                            By.CSS_SELECTOR, "span.result-purchase-price"
-                        ).text,
-                    )
-                )
+        # Determine the total number of pages to scrape
+        total_matches = int(data["total_matches_found"])
+        total_pages_to_scrape = math.ceil(total_matches / 50)
 
-                insert_car(db, car_id)
-                insert_car_metadata(
-                    db,
-                    car_id,
-                    car_type,
-                    car_colour,
-                    car_wheels,
-                    car_interior,
-                    car_price,
-                )
-                insert_car_location(db, car_id, state)
-                found_cars.add(car_id)
+        # Process the initial page
+        process_results(data, found_cars)
 
-        driver.quit()
+        # Fetch subsequent pages
+        for _ in range(1, total_pages_to_scrape):
+            sleep(5)  # Sleep to avoid rate limiting
+            query_parameters["offset"] += 50  # increment offset
+            data = fetch_page_data(driver, query_parameters)
+            process_results(data, found_cars)
+
+        # Mark missing cars as removed
         removed_cars = active_cars - found_cars
         for car_id in removed_cars:
-            mark_car_as_removed(db, car_id)
+            car_to_mark_as_removed = Car.select().where(Car.id == car_id).get()
+            car_to_mark_as_removed.removed_at = datetime.now()
+            car_to_mark_as_removed.save()
 
         print(f"✅ Scraped data at {datetime.now()}")
+
     except Exception as e:
         print(f"❌ Error: {e}")
+
     finally:
+        if driver:
+            driver.quit()
+        db.close()
         sleep(3600)
+
+
+def fetch_page_data(driver: webdriver.Chrome, query_parameters: dict) -> dict:
+    """
+    Given a Selenium driver and query parameters dict,
+    sends a request to Tesla's inventory API and returns the parsed JSON data.
+    """
+    encoded_query = urllib.parse.urlencode({"query": json.dumps(query_parameters)})
+    url = f"https://www.tesla.com/inventory/api/v4/inventory-results?{encoded_query}"
+
+    driver.get(url)
+    page_source = driver.find_element("tag name", "pre").text
+    data = json.loads(page_source)
+    return data
+
+
+def process_results(data: dict, found_cars: set) -> None:
+    """
+    Processes the 'results' from Tesla's inventory data,
+    inserting or ignoring database conflicts, and updates found_cars set.
+    """
+    for entry in data.get("results", []):
+        car_id = entry["VIN"]
+        car_type = entry["TRIM"][0]
+        car_colour = entry["PAINT"][0]
+        car_wheels = entry["WHEELS"][0]
+        car_interior = entry["INTERIOR"][0]
+        car_price = entry["TotalPrice"]
+        car_state = entry["StateProvince"]
+
+        # Insert or ignore existing records
+        Car.insert(id=car_id).on_conflict_ignore().execute()
+        CarMetadata.insert(
+            car=car_id,
+            type=car_type,
+            colour=car_colour,
+            wheels=car_wheels,
+            interior=car_interior,
+            price=car_price,
+        ).on_conflict_ignore().execute()
+
+        Location.insert(name=car_state).on_conflict_ignore().execute()
+        CarLocation.insert(
+            car=car_id,
+            location=Location.select().where(Location.name == car_state).get(),
+        ).on_conflict_ignore().execute()
+
+        found_cars.add(car_id)
