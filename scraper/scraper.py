@@ -45,16 +45,17 @@ def scrape_website_data(db: Database) -> None:
         page_source = driver.find_element("tag name", "pre").text
         data = json.loads(page_source)
         scraped_pages = 1
-        total_pages_to_scrape = math.ceil(data["total_matches_found"] / 50)
+        total_pages_to_scrape = math.ceil(int(data["total_matches_found"]) / 50)
 
         for entry in data["results"]:
             car_id = entry["VIN"]
-            car_type = entry["TRIM"]
-            car_colour = entry["PAINT"]
-            car_wheels = entry["WHEELS"]
+            car_type = entry["TRIM"][0]
+            car_colour = entry["PAINT"][0]
+            car_wheels = entry["WHEELS"][0]
             car_interior = entry["INTERIOR"][0]
             car_price = entry["TotalPrice"]
             car_state = entry["StateProvince"]
+            print(car_id, car_type, car_colour, car_wheels, car_interior, car_price, car_state)
             insert_car(db, car_id)
             insert_car_metadata(
                 db,
