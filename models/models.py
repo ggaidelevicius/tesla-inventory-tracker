@@ -4,7 +4,6 @@ from peewee import (
     DateTimeField,
     IntegerField,
     ForeignKeyField,
-    TextField,
     PostgresqlDatabase,
 )
 from datetime import datetime
@@ -35,10 +34,10 @@ class Location(BaseModel):
 
 class CarMetadata(BaseModel):
     car = ForeignKeyField(Car, backref="metadata", unique=True)
-    type = TextField()
-    colour = TextField()
-    wheels = TextField()
-    interior = TextField()
+    type = CharField()
+    colour = CharField()
+    wheels = CharField()
+    interior = CharField()
     price = IntegerField()
 
 
