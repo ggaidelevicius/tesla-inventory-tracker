@@ -1,30 +1,21 @@
-# TODO: refactor to use inventory api (https://www.tesla.com/inventory/api/v4/inventory-results?query=..)
-
 import signal
 import sys
-from database import Database
-from models import create_enums, create_tables, seed_tables
 from scraper import scrape_website_data
+from models import db, Car, Location, CarMetadata, CarLocation
+from peewee import PostgresqlDatabase
 
 
-def signal_handler(db: Database, _sig, _frame):
+def signal_handler(db: PostgresqlDatabase, _sig, _frame):
     print("Exiting and closing database connection")
-    db.close()
+    if not db.is_closed():
+        db.close()
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    db = Database(
-        dbname="postgres",
-        user="postgres",
-        password="postgres",
-        host="localhost",
-        port=5432,
-    )
-    create_enums(db)
-    create_tables(db)
-    seed_tables(db)
-
+    db.connect()
+    db.create_tables([Car, Location, CarMetadata, CarLocation])
+    db.close()
     signal.signal(signal.SIGINT, lambda sig, frame: signal_handler(db, sig, frame))
     try:
         while True:
