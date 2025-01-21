@@ -18,9 +18,9 @@ def scrape_website_data(db: Database) -> None:
     active_cars = set(get_active_cars(db))
     found_cars = set()
     try:
+        driver = webdriver.Chrome()
         for state in ["ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA"]:
             url = f"https://www.tesla.com/en_AU/inventory/new/m3?RegistrationProvince={state}"
-            driver = webdriver.Chrome()
             driver.get(url)
             sleep(5)
 
@@ -67,7 +67,7 @@ def scrape_website_data(db: Database) -> None:
                 insert_car_location(db, car_id, state)
                 found_cars.add(car_id)
 
-            driver.quit()
+        driver.quit()
         removed_cars = active_cars - found_cars
         for car_id in removed_cars:
             mark_car_as_removed(db, car_id)
